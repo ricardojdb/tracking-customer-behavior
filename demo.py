@@ -4,29 +4,54 @@ import requests
 import base64
 import cv2
 
+import utils
+
 
 def encode_img(img):
     _, buffer = cv2.imencode('.jpg', img)
     img_str = base64.b64encode(buffer)
     return img_str
 
-img = cv2.imread("image.jpg")
-img = img[:, :, ::-1]
-print(img.shape)
-h, w = img.shape[:2]
-img_str = encode_img(img)
+# Start thread to capture and show the stream.
+video_path = 0
+video_capture = utils.WebcamVideoStream(video_path).start()
 
 host = "localhost"
-r = requests.post(f"http://{host}:7000/predict", data=img_str)
 
-detections = r.json()[0]
-xmin = int(detections["xmin"] * w)
-ymin = int(detections["ymin"] * h)
-xmax = int(detections["xmax"] * w)
-ymax = int(detections["ymax"] * h)
+while True:
+    # Collect width and height from the stream
+    h, w = int(video_capture.h), int(video_capture.w)
+    # Read the current frame
+    ret, image = video_capture.read()
 
-img_out = img[:, :, ::-1]
-img_out = cv2.rectangle(img_out, (xmin, ymin), (xmax, ymax), (255, 0, 0), 3)
-cv2.imshow("image", img_out)
-cv2.waitKey()
-cv2.destroyAllWindows()
+    if not ret:
+        print('No frames has been grabbed')
+        break
+
+    img = np.copy(image)
+
+    try:
+        detect_req = requests.post(
+            url=f'http://{host}:7000/predict',
+            data=encode_img(img),
+            timeout=5)
+        detections = detect_req.json()
+    except:
+        traceback.print_exc(file=sys.stdout)
+        detections = []
+
+    data_list = []
+    for detection in detections:
+        label = detection["label"]
+        xmin = int(detection["xmin"] * w)
+        ymin = int(detection["ymin"] * h)
+        xmax = int(detection["xmax"] * w)
+        ymax = int(detection["ymax"] * h)
+
+        data_list.append([label, [xmin, ymin, xmax, ymax]])
+
+    # Send outputs to the thread so it can be plotted on the stream.
+    video_capture.data_list = data_list
+
+    if video_capture.stopped:
+        break

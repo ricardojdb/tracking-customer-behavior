@@ -11,7 +11,7 @@ import os
 global colors, classes
 
 # Set the color for the sentiment bars
-random = [[random.randint(0, 255) for _ in range(3)] for _ in range(80)]
+colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(80)]
 
 
 def weighted_average(Vdw, dw, beta):
@@ -26,11 +26,6 @@ def draw_box(image, label, box):
     Args:
         image (narray): the image containng the face.
         label (str): the label that goes on top of the box.
-        gender (str): Gender from the gender model.
-        age (int): Age from the age model.
-        scores (narray): Facial expression prediciton scores.
-        classes (narray): List of predicted emotions.
-        colors (dict): each amotion mapped to a color.
         box (narray): Bounding box coordinates [xmin,ymin,xmax,ymax].
     Return:
         result_image (narray): edited image

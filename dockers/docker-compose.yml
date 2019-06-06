@@ -1,0 +1,19 @@
+version: '2.3'
+services:
+  yolodetection:
+    # Choose container name
+    container_name: detection-service
+    
+    # If the image is not created
+    build: ./detection # path to Dockerfile
+
+    # Route the desire ports <LOCAL>:<DOCKER>
+    ports:
+     - "7000:7000"
+
+    # Path to the project folder <LOCAL>:<DOCKER>
+    volumes:
+     - ./detection:/app 
+
+    # If the image uses GPU
+    # runtime: nvidia

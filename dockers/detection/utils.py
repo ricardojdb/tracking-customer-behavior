@@ -99,6 +99,9 @@ class YoloDetection(object):
 
         # Create json response
         detect_list = []
+        if detections is None:
+            return json.dumps(detect_list)
+
         for i in range(0, detections.shape[0]):
             # extract the confidence (i.e., probability
             # associated with the prediction

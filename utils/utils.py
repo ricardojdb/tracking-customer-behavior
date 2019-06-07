@@ -1,17 +1,45 @@
 from threading import Thread
+from collections import deque
+from heatmappy import Heatmapper
+from PIL import Image
+
 import numpy as np
 import traceback
 import random
+import copy
 import time
 import six
 import sys
 import cv2
 import os
 
-global colors, classes
 
 # Set the color for the sentiment bars
-colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(80)]
+def load_classes(path):
+    # Loads *.names file at 'path'
+    with open(path, 'r') as f:
+        names = f.read().split('\n')
+    # filter removes empty strings (such as last line)
+    return list(filter(None, names))
+
+COLORS = {}
+
+for label in load_classes("dockers/detection/models/yolov3/coco.names"):
+    COLORS[label] = [random.randint(0, 255) for _ in range(3)]
+
+CAMERA_COORDS = np.asarray([[1106, 646],
+                            [764, 228],
+                            [1252, 300],
+                            [1688, 154]],
+                           dtype=np.float32)
+
+PLANE_COORDS = np.asarray([[218, 306],
+                           [486, 306],
+                           [336, 426],
+                           [394, 826]],
+                          dtype=np.float32)
+
+PERSPECTIVE_MAT = cv2.getPerspectiveTransform(CAMERA_COORDS, PLANE_COORDS)
 
 
 def weighted_average(Vdw, dw, beta):
@@ -45,7 +73,7 @@ def draw_box(image, label, box):
     center = (xmin+5, ymin - text_size[0][1]//2)
     pt2 = (xmin + text_size[0][0] + 10, ymin)
 
-    box_color = (180, 0, 0)
+    box_color = COLORS[label]
     # Rectangle around text
     cv2.rectangle(img, (xmin, ymin - text_size[0][1]*2), pt2, box_color, 2)
     cv2.rectangle(img, (xmin, ymin - text_size[0][1]*2), pt2, box_color, -1)
@@ -59,6 +87,13 @@ def draw_box(image, label, box):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     return img
+
+
+def perspective_transform(x, y):
+    new_pos = np.dot(PERSPECTIVE_MAT, [x, y, 1.0])
+    new_pos = new_pos[:2] / new_pos[-1]
+    new_x, new_y = new_pos.T
+    return new_x, new_y
 
 
 class WebcamVideoStream:
@@ -77,6 +112,8 @@ class WebcamVideoStream:
         # initialize the variable used to indicate
         # if the thread should be stopped
         self.stopped = False
+        self.points = deque(maxlen=500)
+        self.heatmap_img = cv2.imread('images/square_plane.jpg')
 
     def start(self):
         # start the thread to read frames from the video stream
@@ -87,6 +124,7 @@ class WebcamVideoStream:
 
     def update(self):
         cv2.namedWindow('final_image', cv2.WINDOW_NORMAL)
+        cv2.namedWindow('heatmap', cv2.WINDOW_NORMAL)
         # keep looping infinitely until the thread is stopped
         while True:
             try:
@@ -109,12 +147,24 @@ class WebcamVideoStream:
                     cv2.destroyAllWindows()
                     return
 
+                person_detected = False
                 if self.data_list is not None:
                     for data in self.data_list:
-
                         img = draw_box(img, data[0], data[1])
+                        xmin, ymin, xmax, ymax = data[1]
+                        if data[0] == 'person':
+                            person_detected = True
+                            xmid = xmin + ((xmax-xmin)//2)
+                            x_plane, y_plane = perspective_transform(
+                                xmid, ymax)
+                            self.points.append([x_plane, y_plane])
+
+                if not person_detected:
+                    if len(self.points) != 0:
+                        self.points.popleft()
 
                 cv2.imshow('final_image', img)
+                cv2.imshow('heatmap', self.heatmap_img)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     self.stream.release()
                     cv2.destroyAllWindows()
@@ -132,3 +182,28 @@ class WebcamVideoStream:
     def stop(self):
         # indicate that the thread should be stopped
         self.stopped = True
+
+
+def heatmap_calculator(video_class):
+        print('heatmap one time')
+        plano_ori_heat = Image.open('images/square_plane.jpg')
+        heatmapper = Heatmapper(
+                point_diameter=50,
+                point_strength=0.25,
+                opacity=0.65,
+                colours='default',
+                grey_heatmapper='PIL')
+
+        while True:
+            points = copy.copy(video_class.points)
+            if len(points) != 0:
+                heatmap_img = heatmapper.heatmap_on_img(points, plano_ori_heat)
+                heatmap_img = np.asarray(heatmap_img)
+                heatmap_img = cv2.cvtColor(heatmap_img, cv2.COLOR_BGR2RGB)
+                video_class.heatmap_img = heatmap_img
+            else:
+                heatmap_img = np.asarray(plano_ori_heat)
+                heatmap_img = cv2.cvtColor(heatmap_img, cv2.COLOR_BGR2RGB)
+                video_class.heatmap_img = heatmap_img
+            if video_class.stopped:
+                return

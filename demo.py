@@ -1,8 +1,11 @@
+from threading import Thread
 from io import BytesIO
 import numpy as np
+import traceback
 import requests
 import base64
 import cv2
+import sys
 
 import utils
 
@@ -17,6 +20,8 @@ video_path = 0
 video_capture = utils.WebcamVideoStream(video_path).start()
 
 host = "localhost"
+
+Thread(target=utils.heatmap_calculator, args=(video_capture,)).start()
 
 while True:
     # Collect width and height from the stream

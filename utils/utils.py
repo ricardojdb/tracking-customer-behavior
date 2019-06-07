@@ -185,25 +185,25 @@ class WebcamVideoStream:
 
 
 def heatmap_calculator(video_class):
-        print('heatmap one time')
-        plano_ori_heat = Image.open('images/square_plane.jpg')
-        heatmapper = Heatmapper(
-                point_diameter=50,
-                point_strength=0.25,
-                opacity=0.65,
-                colours='default',
-                grey_heatmapper='PIL')
+    print('heatmap one time')
+    plano_ori_heat = Image.open('images/square_plane.jpg')
+    heatmapper = Heatmapper(
+            point_diameter=50,
+            point_strength=0.25,
+            opacity=0.65,
+            colours='default',
+            grey_heatmapper='PIL')
 
-        while True:
-            points = copy.copy(video_class.points)
-            if len(points) != 0:
-                heatmap_img = heatmapper.heatmap_on_img(points, plano_ori_heat)
-                heatmap_img = np.asarray(heatmap_img)
-                heatmap_img = cv2.cvtColor(heatmap_img, cv2.COLOR_BGR2RGB)
-                video_class.heatmap_img = heatmap_img
-            else:
-                heatmap_img = np.asarray(plano_ori_heat)
-                heatmap_img = cv2.cvtColor(heatmap_img, cv2.COLOR_BGR2RGB)
-                video_class.heatmap_img = heatmap_img
-            if video_class.stopped:
-                return
+    while True:
+        points = copy.copy(video_class.points)
+        if len(points) != 0:
+            heatmap_img = heatmapper.heatmap_on_img(points, plano_ori_heat)
+            heatmap_img = np.asarray(heatmap_img)
+            heatmap_img = cv2.cvtColor(heatmap_img, cv2.COLOR_BGR2RGB)
+            video_class.heatmap_img = heatmap_img
+        else:
+            heatmap_img = np.asarray(plano_ori_heat)
+            heatmap_img = cv2.cvtColor(heatmap_img, cv2.COLOR_BGR2RGB)
+            video_class.heatmap_img = heatmap_img
+        if video_class.stopped:
+            return

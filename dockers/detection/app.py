@@ -20,4 +20,4 @@ def predict():
 if __name__ == "__main__":
     # Running the Flask app on the url http://0.0.0.0:7000/
     # Use 0.0.0.0 to run in any IP available
-    app.run(host='0.0.0.0', port=7000, threaded=True)
+    app.run(host='0.0.0.0', port=7000)

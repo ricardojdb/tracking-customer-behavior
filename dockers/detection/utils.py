@@ -40,9 +40,8 @@ class YoloDetection(object):
                 f"weights/{model_name}.weights"))
         model.fuse()
         model.eval()
-        model.to(self.device)
 
-        return model
+        return model.to(self.device)
 
     def decode_data(self, encoded_data):
         """Decodes the encoded data comming from a request.
@@ -94,6 +93,7 @@ class YoloDetection(object):
         # Preprocess into the right format
         inputs = self.preprocess(data)
         # Compute predictions
+        
         pred, _ = self.model(inputs)
         detections = non_max_suppression(pred)[0]
 

@@ -17,8 +17,8 @@ pip install moviepy
 First you have to start the docker APIs
 
 ```bash
-docker-compose dockers\docker-compose.yaml build
-docker-compose dockers\docker-compose.yaml up -d
+docker-compose dockers\docker-compose.yml build
+docker-compose dockers\docker-compose.yml up -d
 ```
 
 Than you can test the API by running the `demo.py` file.

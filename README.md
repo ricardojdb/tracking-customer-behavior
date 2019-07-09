@@ -60,3 +60,8 @@ print(req.json())
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
+
+## Authors:
+
+- [Ricardo Diaz](https://github.com/ricardojdb)
+- [Jhair Gallardo](https://github.com/jhairgallardo)
